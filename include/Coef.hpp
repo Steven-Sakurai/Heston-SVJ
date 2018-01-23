@@ -35,7 +35,6 @@ stdVec interCoef(function<double(double)> f, double x, double interval) {
 	return ret;
 }
 
-
 /*
 	Main Dish!
 		Arguments:
@@ -47,23 +46,25 @@ stdVec interCoef(function<double(double)> f, double x, double interval) {
 		5. parameters
 */
 
+void findNodes(const stdVec& par, stdVec& interNodes) {
+	// create the (nbasis+1) nodes we want to interpolate
+	interNodes = {-0.8, -0.75, -0.7, -0.65, -0.6, -0.55, -0.5, -0.45, -0.4, -0.35,
+		 -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.2, 0.3, 0.4};
+	int i = 0;
+	for(; i < 22; ++i) 
+		interNodes[i] = exp(log(par[2]) - interNodes[i]*log(sqrt( par[2]*par[3]*par[3] / (2*par[1]) ))); 	
+}
 
-void BasisCoef(stdVec& alpha, stdMat& beta, double y, double y0, const stdVec& par) {
+
+void BasisCoef(stdVec& alpha, stdMat& beta, double y, double y0, const stdVec& par, const stdVec& interNodes) {
 	// determine the interpolation nodes, from the stationary gamma distribution
 	// same as method in InitialMoments.hpp
-	double stLogMean = log(par[2]);
-	double stLogSD = log(sqrt( par[2]*par[3]*par[3] / (2*par[1]) ));
-	// create the (nbasis+1) nodes we want to interpolate
-	stdVec interNodes = {-0.8, -0.75, -0.7, -0.65, -0.6, -0.55, -0.5, -0.45, -0.4, -0.35,
-		 -0.3, -0.25, -0.2, -0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.2, 0.3, 0.4};
-	int i;
-	for(int i = 0; i < 22; ++i) 
-		interNodes[i] = exp(stLogMean - interNodes[i]*stLogSD);
 	// first calculate alpha easily 
-	auto p1_y = bind(prePy, par, y, y0, placeholders::_1); // the marginal density functional object, i.e. prestfun
-	double stepSize;
-	stdVec tmp(4);
-	for(i = 0; i < nbasis; ++i) {
+	static auto p1_y = bind(prePy, par, y, y0, placeholders::_1); // the marginal density functional object, i.e. prestfun
+	static double stepSize;
+	static stdVec tmp(4);
+	int i = 0;
+	for(; i < nbasis; ++i) {
 		stepSize = (interNodes[i+1] - interNodes[i])/3.0;
 		tmp = interCoef(p1_y, interNodes[i], stepSize);
 		alpha[i] = tmp[0];
@@ -71,32 +72,19 @@ void BasisCoef(stdVec& alpha, stdMat& beta, double y, double y0, const stdVec& p
 		alpha[i+2*nbasis] = tmp[2];
 		alpha[i+3*nbasis] = tmp[3];
 	}
-	/* 
-		calculate beta matrix (row first):
-		- first traverse the k nodes, to get the B_k at each interval
-		- then for each B_k, expand it to each j nodes
-		Implementation:
-			1. first initialize the four integral functional object I,
-				which should be f(x_i) = p1_y * I_{1, 2, 3, 4},
-				which should be calculated recursively.
-			2. use transform to get the values of 4 Intgeral at each interval
-				as well as p1_y
-	*/
 
-
-	
-	int k, j;
+	int k = 0, j;
 	// traverse v first then v0, row first
-	for(k = 0; k < nbasis; ++k) {
+	for(; k < nbasis; ++k) {
 		// initialize the four functor
 		auto I0 = bind(Integ0, par, y, y0, interNodes[k], interNodes[k+1], placeholders::_1);
 		auto I1 = bind(Integ1, par, y, y0, interNodes[k], interNodes[k+1], placeholders::_1);
 		auto I2 = bind(Integ2, par, y, y0, interNodes[k], interNodes[k+1], placeholders::_1);
 		auto I3 = bind(Integ3, par, y, y0, interNodes[k], interNodes[k+1], placeholders::_1);
-		
-		for(j = 0; j < nbasis; ++j) {
-			if(abs(k-j) > 3)
-				continue;
+
+		for(j = max(k-3, 0); j < min(k+3, nbasis); ++j) {
+			//if(abs(k-j) > 3)
+			//	continue;
 			stepSize = (interNodes[j+1] - interNodes[j])/3.0;
 			
 			tmp = interCoef(I0, interNodes[j], stepSize);
