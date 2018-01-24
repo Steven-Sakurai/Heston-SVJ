@@ -1,0 +1,86 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(pracma)
+i = complex(real = 0, imaginary = 1)
+HestonFFTVanillaInt = function(phi,s0,k,T,r,rf,kappa,theta,sigma,rho,v0,alpha,v) {
+    u = v - (phi*alpha+1)*i
+    d = sqrt((rho*sigma*u*i-kappa)^2 + sigma^2 * (i*u + u^2))
+    g = (kappa-rho*sigma*i*u-d)/(kappa - rho*sigma*i*u + d)
+    # Characteristic function
+    A = i*u*(s0 + (r-rf)*T);
+    B = theta*kappa*sigma^(-2) * ((kappa-rho*sigma*i*u - d) * T - 2*log((1-g*exp(-d*T))/(1-g)))
+    C = v0*sigma^(-2)*(kappa-rho*sigma*i*u-d)*(1-exp(-d*T))/(1-g*exp(-d*T))
+    # \Phi
+    charFunc = exp(A + B + C)
+    # \Psi
+    FFTFunc = charFunc* exp(-r*T) / (alpha^2 + phi*alpha - v^2 + i*(phi*2*alpha +1)*v)
+    
+    payoff = Re(exp(-i*v*k)*FFTFunc)
+    return(payoff)
+}
+```
+
+```{r}
+HestonFFTVanilla = function(phi,S,K,T,r,rf,kappa,theta,sigma,rho,v0,alpha,method) {
+# European FX option price in the Heston model, Carr-Madan approach
+# phi = 1 call; -1 put
+# alpha = 0.75 call; 1.75 put
+# method = 0 Integrate using adaptive Gauss-Kronrod quadrature;
+# method = 1 FFT with Simpson's rule
+# HestonFFTVanilla(1, 100, 100, 1, 0.2, 0.1, 0.1, 0.9, 0.8, 0, 0.05, 0.75, 1)
+
+alpha = 0.75
+
+if (phi==-1) {
+  alpha = alpha + 1
+}
+
+s0 = log(S)
+k = log(K)
+    
+if (method == 0) {
+    IntFun <- function(v) {
+        return(HestonFFTVanillaInt(phi,s0,k,T,r,rf,kappa,theta,sigma,rho,v0,alpha,v))
+        }
+    y = exp(-phi*k*alpha) * quadgk(IntFun, a = 0, b = 10000)/pi
+    return(y)
+}
+else {
+    # FFT with Simpson's rule
+    N = 2^10
+    eta = 0.25
+    v =(0:(N-1))*eta
+    
+    lambda = 2*pi/(N*eta)
+    b = N*lambda/2
+    ku = -b+lambda*(0:(N-1))
+    u = v - (phi*alpha+1)*i
+    d = sqrt((rho*sigma*u*i-kappa)^2+sigma^2*(i*u+u^2))
+    g = (kappa-rho*sigma*i*u-d)/(kappa-rho*sigma*i*u+d)
+    
+    # Characteristic function 
+    C = i*u*(s0 + (r-rf)*T);
+    B = theta*kappa*sigma^(-2)*((kappa-rho*sigma*i*u-d)*T-2*log((1-g*exp(-d*T))/(1-g)))
+    A = v0*sigma^(-2)*(kappa-rho*sigma*i*u-d)*(1-exp(-d*T))/(1-g*exp(-d*T))
+    charFunc = exp(A + B + C)
+    F = charFunc*exp(-r*T)/(alpha^2 + phi*alpha - v^2 + i*(phi*2*alpha +1)*v)
+    
+    # Use Simpson's approximation to calculate FFT
+    SimpsonW = 1/3*(3 + (-1)^(1:N) - c(1, zeros(1, N-1)))
+    FFTFunc = exp(i*b*v)*F*eta*SimpsonW
+    payoff = Re(fft(FFTFunc))
+    OptionValue = exp(-phi*ku*alpha)*payoff/pi
+    # Interpolate to get option price for a given strike
+    y = interp1(as.numeric(ku), as.numeric(OptionValue),k, method = "spline")
+    return(y)
+    }
+}
+```
+```{r}
+HestonFFTVanilla(1, 100, 100, 1, 0.2, 0.1, 0.1, 0.9, 0.8, 0, 0.05, 0.75, 1)
+HestonFFTVanilla(1, 100, 100, 1, 0.2, 0.1, 0.1, 0.9, 0.8, 0, 0.05, 0.75, 0)
+```
