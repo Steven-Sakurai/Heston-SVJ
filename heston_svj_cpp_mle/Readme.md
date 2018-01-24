@@ -41,5 +41,8 @@ install.packages(c("Rcpp", "BH", "ESGtoolkit", "nloptr"))
 ```
 
 `loglike_port_r.cpp` port the C++ function into R.    
-Other comments are made within `heston_svj_mle_complete.Rmd` file.  
+Other comments are made within `heston_svj_mle_complete.Rmd` file. 
+
+# Great!  
+I can't believe it! Changing to `NLOPT_LN_BOBYQA` algorithm results in significant speedup and accuracy. 
 
