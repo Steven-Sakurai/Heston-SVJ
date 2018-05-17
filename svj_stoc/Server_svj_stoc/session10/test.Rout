@@ -1,0 +1,680 @@
+
+R version 3.3.3 (2017-03-06) -- "Another Canoe"
+Copyright (C) 2017 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> set.seed(26185)
+> 
+> n = 50
+> len = 1001
+> require(Rcpp)
+Loading required package: Rcpp
+> require(BH)
+Loading required package: BH
+> require(nloptr)
+Loading required package: nloptr
+> require(ggplot2)
+Loading required package: ggplot2
+> require(gridExtra)
+Loading required package: gridExtra
+> options(digits=8)
+> source('../conv_plot.R')
+> sourceCpp('../Simulation.cpp')
+> par = c(0.05, 3.9, 0.08, 0.3038, -0.6974, 3.2, -0.3551, 0.0967*0.0967)
+> sourceCpp('../nll.cpp', verbose = F)
+> 
+> opts <- list(algorithm="NLOPT_LN_NELDERMEAD", xtol_rel = 1.0e-6, maxeval = 10000)
+> # set lower and upper bound
+> lb = c(-0.5, 0.001, 1e-6, 0.001, -0.99, 0, -1, 1e-8)
+> ub = c(0.5, 100, 1, 1, 0.99, 10, 0, 1)
+> 
+> # run n paths
+> converge.list = vector(mode="numeric", length = n)
+> est.par.list = data.frame(mu = double(), kappa = double(), theta = double(), xi = double(), rho = double(), lambda = double(), mu_s = double(), sigma_s = double())
+> i = 1
+> while(i <= n) {
++     seed.list = sample(10000, 4)
++     y = SimSVJ(par, len, log(100), par[3], 1/252, seed.list[1], seed.list[2], seed.list[3], seed.list[4])
++ 	f <- function(p) {
++ 	    return(nll(p, y))
++ 	}
++     start = Sys.time()
++     result = nloptr(x0 = par, eval_f = f, 
++        opts = opts, 
++        lb = lb, ub = ub)
++     if(result$status < 0)
++         next;
++ 	est.res = as.numeric(result$solution)
++ 	conv.res = check.converge(f, result$solution)
++ 	write.table(est.res, file = "./est.csv", sep = ",", append = T, row.names = F, col.names = F, quote = F)
++ 	write.table(conv.res, file = "./conv.csv", sep = ",", append = T, row.names = F, col.names = F, quote = F)
++     print(i)
++     print(Sys.time() - start)
++     print(est.res)
++     est.par.list[i, ] = as.numeric(est.res)
++     converge.list[i] = conv.res
++ 	i = i + 1
++ }
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 1
+Time difference of 7.8849231 mins
+[1]  0.197341626  7.560527797  0.059034020  0.334290713 -0.756419155
+[6]  3.061742207 -0.404041994  0.011414015
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 2
+Time difference of 6.7771165 mins
+[1] -0.188146478  5.773073369  0.095469303  0.370433264 -0.699413333
+[6]  4.371879815 -0.358509832  0.012071248
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 3
+Time difference of 10.493419 mins
+[1]  0.011610650  6.620229296  0.087629820  0.303590312 -0.989999248
+[6]  3.843948966 -0.374956338  0.011505499
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 4
+Time difference of 7.5914224 mins
+[1]  0.011307910  4.430345378  0.083694599  0.181214265 -0.752329240
+[6]  4.682148175 -0.321830897  0.012045543
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 5
+Time difference of 7.8897802 mins
+[1]  0.029942047  2.824641823  0.094184430  0.219232504 -0.888902571
+[6]  5.738985446 -0.351277278  0.024761566
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 6
+Time difference of 7.999654 mins
+[1] -0.001513948  1.923035054  0.072859241  0.199615328 -0.989955888
+[6]  3.318422375 -0.382518872  0.005899934
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 7
+Time difference of 6.9351242 mins
+[1]  0.0193758841  3.5080746982  0.0704445433  0.2672177364 -0.5208022547
+[6]  2.2898987678 -0.3790656910  0.0093195595
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 8
+Time difference of 12.048525 mins
+[1]  0.148146203 17.420780219  0.069467224  0.497400558 -0.028279631
+[6]  3.319214974 -0.353837547  0.005598096
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 9
+Time difference of 8.121603 mins
+[1]  0.046991814  7.233909295  0.080370092  0.419361919 -0.630937332
+[6]  2.547752115 -0.403189551  0.011895397
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 10
+Time difference of 6.1767456 mins
+[1]  0.097238240  2.621168694  0.077143658  0.229747551 -0.651495254
+[6]  3.395152243 -0.345687744  0.022650431
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 11
+Time difference of 6.7244994 mins
+[1] -0.1211067652  3.8736018892  0.1019725502  0.3192916238 -0.8379210102
+[6]  2.8143776945 -0.3282465629  0.0083912523
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 12
+Time difference of 26.604784 mins
+[1]  0.0038984337  1.2527802594  0.0982367423  0.2701155139 -0.9899990012
+[6]  2.8091307161 -0.3600990528  0.0121701632
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 13
+Time difference of 7.0177913 mins
+[1]  0.080432552 12.459607118  0.076639485  0.554361838 -0.766415171
+[6]  2.547547977 -0.431528896  0.013980969
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 14
+Time difference of 6.9265773 mins
+[1]  0.203743135  3.818065955  0.086040664  0.384851885 -0.745442828
+[6]  4.222709418 -0.292430630  0.015695076
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 15
+Time difference of 7.8174367 mins
+[1] -0.00019105255  1.49304974384  0.07729930070  0.19604173705 -0.74985277327
+[6]  2.56878926445 -0.31716280711  0.01259552443
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 16
+Time difference of 7.9525286 mins
+[1]  0.0769115697  5.8723553612  0.0736323908  0.3442228827 -0.7781585979
+[6]  2.0330593875 -0.3619854095  0.0078166216
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 17
+Time difference of 7.1945747 mins
+[1] -0.34288687  4.98814086  0.10090217  0.41515729 -0.80626771  2.57243587
+[7] -0.33971579  0.01779476
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 18
+Time difference of 17.781257 mins
+[1]  0.030034567  6.152506328  0.063715040  0.257110835 -0.989999999
+[6]  5.974994827 -0.336425461  0.019702152
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 19
+Time difference of 7.746353 mins
+[1]  0.0041469389  4.0017276189  0.0880481084  0.3367956631 -0.6888634847
+[6]  2.0457671661 -0.3486066549  0.0140504836
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 20
+Time difference of 8.3225381 mins
+[1]  0.0769639880  3.5599045319  0.0848276825  0.2754397742 -0.7642013814
+[6]  4.3594585963 -0.3569883397  0.0073496197
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 21
+Time difference of 6.3772927 mins
+[1] -0.1608590642  5.7631678664  0.0905118284  0.3069893860 -0.7085471169
+[6]  3.0644587689 -0.3447819755  0.0068163841
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 22
+Time difference of 6.9520905 mins
+[1] -0.182226008  7.740384629  0.082997133  0.368367643 -0.895003985
+[6]  3.839797171 -0.417075445  0.011500060
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 23
+Time difference of 6.8573873 mins
+[1]  0.0136840540  7.9271181329  0.0797179042  0.3795237549 -0.7703763783
+[6]  3.5780768204 -0.4004223194  0.0062858836
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 24
+Time difference of 7.5729041 mins
+[1]  0.1653468274  6.5655205567  0.0759509116  0.4480113000 -0.3037400840
+[6]  3.3197492652 -0.3617104903  0.0067814979
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 25
+Time difference of 10.168381 mins
+[1]  0.057266059  3.309273529  0.076898458  0.411597637 -0.939651920
+[6]  4.125939362 -0.405056718  0.020791521
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 26
+Time difference of 6.6076801 mins
+[1]  0.1854463852  3.3469883208  0.0651424187  0.2426754542 -0.6477954423
+[6]  3.5790556750 -0.4096309597  0.0082087399
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 27
+Time difference of 5.8720973 mins
+[1]  0.086665755  5.192889927  0.074104564  0.276232358 -0.797468805
+[6]  4.104058652 -0.362571960  0.010419027
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 28
+Time difference of 12.514498 mins
+[1]  0.1208136638  4.4894845199  0.0796059772  0.2491051790 -0.9899999998
+[6]  3.5864046415 -0.3434930630  0.0093890602
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 29
+Time difference of 5.5764553 mins
+[1]  0.1141555463  4.7655910561  0.0760972255  0.2758022057 -0.6025242481
+[6]  2.8064682822 -0.3445606827  0.0076043518
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 30
+Time difference of 8.1588328 mins
+[1]  0.257593211  6.923581985  0.057577810  0.320321641 -0.708499193
+[6]  3.074644166 -0.400475190  0.018222829
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 31
+Time difference of 6.7654196 mins
+[1]  0.2597700222  2.2095014293  0.0772385154  0.3152125660 -0.7478344950
+[6]  3.3191141685 -0.4480347644  0.0048735696
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 32
+Time difference of 7.757036 mins
+[1]  0.095956421  3.716091485  0.082038871  0.304154565 -0.373901220
+[6]  3.322522091 -0.404617718  0.011903786
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 33
+Time difference of 6.6012272 mins
+[1]  0.1969685853  6.9246086212  0.0705262541  0.4203876609 -0.8072543896
+[6]  2.5523993978 -0.3280623507  0.0091483542
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 34
+Time difference of 5.6345744 mins
+[1]  0.1505341880  4.7548912868  0.0836543590  0.1787966838 -0.8558875379
+[6]  3.0650819204 -0.3496669454  0.0094617614
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 35
+Time difference of 7.6549195 mins
+[1] -0.102300165  8.263148168  0.085212357  0.479152496 -0.872119295
+[6]  4.369808628 -0.394371926  0.013760529
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 36
+Time difference of 6.9072921 mins
+[1]  0.144914497  9.811231944  0.081949444  0.338136014 -0.423634870
+[6]  3.598598443 -0.319471121  0.010671666
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 37
+Time difference of 6.5866928 mins
+[1]  0.044075060 12.333153856  0.065807883  0.468956868 -0.383656994
+[6]  2.300703624 -0.328642956  0.010930807
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 38
+Time difference of 8.6529127 mins
+[1] -0.0182237850  3.9662497572  0.0739649460  0.3700395574 -0.8323409372
+[6]  3.5780493913 -0.3773576093  0.0037952506
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 39
+Time difference of 5.8676668 mins
+[1]  0.0879652975  3.4252702733  0.0847166384  0.3355889323 -0.8353267608
+[6]  3.8395349967 -0.3384620664  0.0062436229
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 40
+Time difference of 7.6409519 mins
+[1]  0.0841145945  8.2676181719  0.0645124723  0.3998290767 -0.6080913534
+[6]  2.8029555462 -0.3635475815  0.0056475183
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 41
+Time difference of 6.1893075 mins
+[1] -0.2746162279  5.1271909413  0.0857080414  0.3533448486 -0.4689713701
+[6]  3.6055150002 -0.3117919894  0.0089208045
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 42
+Time difference of 9.1750361 mins
+[1] -0.026395624  2.606397029  0.080759929  0.317828826 -0.937444897
+[6]  3.061530806 -0.404606250  0.008688762
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 43
+Time difference of 6.7788092 mins
+[1] -0.0397597488  4.4193330721  0.0790060548  0.3382386104 -0.6434455910
+[6]  2.8079351333 -0.3489739559  0.0098660048
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 44
+Time difference of 8.2846399 mins
+[1] -0.0202393172  4.1464112395  0.0733405329  0.2256528879 -0.4821984483
+[6]  2.2885714812 -0.4587005313  0.0047012026
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 45
+Time difference of 6.3702744 mins
+[1] -0.155058356 13.277228432  0.096643765  0.364110717 -0.728933807
+[6]  3.063198782 -0.408738813  0.011232596
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] FALSE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 46
+Time difference of 7.8721206 mins
+[1]  0.2570454056  3.2974657975  0.0660341555  0.1810474768 -0.9899999899
+[6]  3.5807330014 -0.3406254351  0.0068305983
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 47
+Time difference of 4.2429172 mins
+[1]  0.216604045  4.806503675  0.069168937  0.263403260 -0.741294108
+[6]  2.817441190 -0.382858372  0.013665947
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 48
+Time difference of 3.4970893 mins
+[1]  0.2544722965  4.0189185378  0.0675266404  0.2967558191 -0.7447061136
+[6]  3.5852980466 -0.3155519756  0.0086729696
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 49
+Time difference of 4.6743224 mins
+[1] -0.0630106696  7.8530445955  0.0902242865  0.4857705513 -0.4929716888
+[6]  2.5460142411 -0.3793582387  0.0072459553
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] TRUE
+[1] 50
+Time difference of 3.9166253 mins
+[1]  0.1288139241  5.6223014071  0.0788229359  0.3618324038 -0.6169926389
+[6]  2.5480067331 -0.3263807910  0.0066762798
+> 
+> write.csv(file = "convResult.csv", converge.list)
+> write.csv(file = "estResult.csv", est.par.list)
+> 
+> proc.time()
+     user    system   elapsed 
+23551.592     1.648 23645.685 

@@ -1,0 +1,64 @@
+
+R version 3.5.0 (2018-04-23) -- "Joy in Playing"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin16.7.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> setwd('~/Desktop/svj_R_package stochastic intensity/')
+> options(digits=12)
+> 
+> set.seed(1)
+> seed = c(123, 321, 231, 132)
+> 
+> library(Rcpp)
+> library(BH)
+> library(nloptr)
+> library(ggplot2)
+> library(gridExtra)
+> 
+> source('conv_plot.R')
+> sourceCpp('Simulation.cpp')
+> sourceCpp('nll.cpp', verbose = F)
+> 
+> par = c(0.05, 4.5394, 0.0439, 0.3038, -0.6974, 1.1308, 3, -0.2151, 0.15*0.15)
+> y = SimSVJ(par, 2001, log(100), par[3], 1/252, seed[1], seed[2], seed[3], seed[4])
+> f <- function(p) {
++     return(nll(p, y))
++ }
+> 
+> start.time = Sys.time()
+> a = f(par)
+> Sys.time() - start.time
+Time difference of 0.377283096313 secs
+> print(a)
+[1] -5941.17210027
+> 
+> start.time = Sys.time()
+> 
+> lb = c(-0.5, 0.001, 1e-6, 0.001, -0.99, 0, 0, -1, 1e-6)
+> ub = c(0.5, 100, 1, 1, 0.99, 10, 100, 0, 1)
+> opts <- list(algorithm="NLOPT_LN_NELDERMEAD", xtol_rel=1.0e-4, "maxeval"=10000, print_level = 0)
+> 
+> res1 = nloptr(x0 = par, eval_f = f, opts = opts, lb = lb, ub = ub)
+
+ *** caught segfault ***
+address 0x0, cause 'memory not mapped'
+
+Traceback:
+ 1: nloptr(x0 = par, eval_f = f, opts = opts, lb = lb, ub = ub)
+An irrecoverable exception occurred. R is aborting now ...
